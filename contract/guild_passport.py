@@ -18,29 +18,30 @@ def obj(v):
  return json.loads(s[a:b+1])
 @allow_storage
 @dataclass
-class Passport:issuer:Address;subject:Address;kind:str;sources:str;state:str;claims:str;digests:str
+class Passport:issuer:str;subject:str;kind:str;sources:str;state:str;claims:str;digests:str
 class GuildPassport(gl.Contract):
- admin:Address;issuers:TreeMap[Address,bool];passports:TreeMap[str,Passport]
+ admin:Address;issuers:TreeMap[str,bool];passports:TreeMap[str,Passport]
  def __init__(self):self.admin=gl.message.sender_address
  @gl.public.write
- def authorize_issuer(self,issuer:Address,allowed:bool)->None:
+ def authorize_issuer(self,issuer:str,allowed:bool)->None:
   if gl.message.sender_address!=self.admin:raise gl.vm.UserError('[EXPECTED] admin only')
-  self.issuers[issuer]=allowed
+  self.issuers[c(issuer,42).lower()]=allowed
  def _get(self,i):
   k=kid(i)
   if k not in self.passports:raise gl.vm.UserError('[EXPECTED] passport not found')
   return k,self.passports[k]
  @gl.public.write
- def draft(self,i:str,subject:Address,kind:str,sources:list[str])->None:
+ def draft(self,i:str,subject:str,kind:str,sources:list[str])->None:
   k=kid(i)
-  if k in self.passports or not self.issuers.get(gl.message.sender_address,False):raise gl.vm.UserError('[EXPECTED] authorized unique issuer required')
+  issuer=gl.message.sender_address.as_hex.lower()
+  if k in self.passports or not self.issuers.get(issuer,False):raise gl.vm.UserError('[EXPECTED] authorized unique issuer required')
   p=[url(x) for x in sources]
   if len(p)!=2 or p[0][1]==p[1][1]:raise gl.vm.UserError('[EXPECTED] two independent source hosts required')
-  self.passports[k]=Passport(gl.message.sender_address,subject,c(kind,100),json.dumps([x[0] for x in p]),'DRAFT','[]','[]')
+  self.passports[k]=Passport(issuer,c(subject,42).lower(),c(kind,100),json.dumps([x[0] for x in p]),'DRAFT','[]','[]')
  @gl.public.write
  def consent(self,i:str)->None:
   _,p=self._get(i)
-  if p.subject!=gl.message.sender_address or p.state!='DRAFT':raise gl.vm.UserError('[EXPECTED] subject draft required')
+  if p.subject!=gl.message.sender_address.as_hex.lower() or p.state!='DRAFT':raise gl.vm.UserError('[EXPECTED] subject draft required')
   p.state='CONSENTED'
  def _verify(self,p):
   urls=json.loads(p.sources)
@@ -48,7 +49,7 @@ class GuildPassport(gl.Contract):
    docs=[];dig=[]
    for ix,u in enumerate(urls):
     raw=gl.nondet.web.get(u).body[:12000];b=raw if isinstance(raw,bytes) else str(raw).encode();dig.append(hashlib.sha256(b).hexdigest());docs.append({'slot':ix,'body':b.decode(errors='replace')})
-   q='Verify that registry slot 0 authorizes the issuer and credential slot 1 identifies the subject and credential kind. JSON only {"valid":true,"claim_codes":[]}. KIND:'+p.kind+' ISSUER:'+p.issuer.as_hex+' SUBJECT:'+p.subject.as_hex+' DOCS:'+json.dumps(docs)
+   q='Verify that registry slot 0 authorizes the issuer and credential slot 1 identifies the subject and credential kind. JSON only {"valid":true,"claim_codes":[]}. KIND:'+p.kind+' ISSUER:'+p.issuer+' SUBJECT:'+p.subject+' DOCS:'+json.dumps(docs)
    x=obj(gl.nondet.exec_prompt(q,response_format='json'));return {'valid':bool(x.get('valid',False)),'claims':sorted(set(c(x,80).upper() for x in x.get('claim_codes',[])[:20] if c(x,80))),'digests':dig}
   def valid(x):
    if not isinstance(x,gl.vm.Return):return False
@@ -69,8 +70,8 @@ class GuildPassport(gl.Contract):
  @gl.public.write
  def revoke(self,i:str)->None:
   _,p=self._get(i)
-  if p.issuer!=gl.message.sender_address or p.state!='ACTIVE':raise gl.vm.UserError('[EXPECTED] issuer active passport required')
+  if p.issuer!=gl.message.sender_address.as_hex.lower() or p.state!='ACTIVE':raise gl.vm.UserError('[EXPECTED] issuer active passport required')
   p.state='REVOKED'
  @gl.public.view
  def get_passport(self,i:str)->dict:
-  k,p=self._get(i);return {'id':k,'issuer':p.issuer.as_hex,'subject':p.subject.as_hex,'kind':p.kind,'sources':json.loads(p.sources),'state':p.state,'claimCodes':json.loads(p.claims),'digests':json.loads(p.digests)}
+  k,p=self._get(i);return {'id':k,'issuer':p.issuer,'subject':p.subject,'kind':p.kind,'sources':json.loads(p.sources),'state':p.state,'claimCodes':json.loads(p.claims),'digests':json.loads(p.digests)}
