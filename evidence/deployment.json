@@ -1,10 +1,10 @@
 {
-  "contract": "0x03CB0B02090330E10Cd7bd9E698D674D879b5f85",
-  "deploymentTx": "0x7c1223ce6d318f5853c996a2a64b0b331ecc1227963f2ecfb6d58969c5921f8d",
+  "contract": "0x39708dd0A20512E7dF30EB24Bba12B13E39bD0c5",
+  "deploymentTx": "0x3253d1817c8486267f643a879d09a40032dfab027468d7337cd6f9906df76e13",
   "network": "StudioNet",
   "deployer": "0xAD049E0Edc298C97552eD60071a35bfc60181FD4",
-  "sourceCommit": "93b22ff1118fe91add86bc6e2235c1968771cab8",
-  "evidenceCommit": "93b22ff1118fe91add86bc6e2235c1968771cab8",
+  "sourceCommit": "4bc4e038d6ab51686a1a331cefe17c66a8a077a7",
+  "evidenceCommit": "4bc4e038d6ab51686a1a331cefe17c66a8a077a7",
   "receiptStatus": "ACCEPTED",
   "execution": "CONTRACT_ADDRESS_RETURNED"
 }
