@@ -4,4 +4,4 @@ def safe(path,*a,**k):
  try:return _unlink(path,*a,**k)
  except PermissionError:return None
 os.unlink=safe
-CONTRACT='contract/guild_passport.py'
+CONTRACT='credential_core/guild_passport.py'
