@@ -1,0 +1,1 @@
+Issuer registry: Atlas Guild, address recorded by the contract deployer, is authorized to issue Builder credentials.
